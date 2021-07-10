@@ -3,18 +3,20 @@ import json
 import base64
 import cv2
 import pickle
-import hashlib
 
 
 def image(request):
     if request.method == "POST":
         data = json.loads(request.body)
+        f = open('uname2auth.json')
+        uname2auth = json.load(f)
+        f.close()
 
         image1 = base64.b64decode(data['imgbase64'])
 
         with open('image.png', 'wb') as f:
             f.write(image1)
-        face_cascade = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
+        face_cascade = cv2.CascadeClassifier('data/haarcascade_frontalface_alt2.xml')
         recognizer = cv2.face.LBPHFaceRecognizer_create()
 
         recognizer.read("trainer.yml")
@@ -37,20 +39,17 @@ def image(request):
 
             roi = gray[y: y + h, x: x + w]
 
-            roi = cv2.resize(roi, (512, 512), interpolation=cv2.INTER_LINEAR)
+            roi = cv2.resize(roi, (128, 128), interpolation=cv2.INTER_LINEAR)
+            roi = cv2.equalizeHist(roi)
 
             ind, conf = recognizer.predict(roi)
 
-            print(labels[ind], conf)
-
-            if 40 <= conf <= 85:
-                # print(labels[ind])
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                name = labels[ind]
-                print(name)
-                color = (255, 255, 255)
-                stroke = 2
-                cv2.putText(image, name, (x, y - 25), font, 1, color, stroke, cv2.LINE_AA)
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            name = labels[ind]
+            print(name)
+            color = (255, 255, 255)
+            stroke = 2
+            cv2.putText(image, name, (x, y - 25), font, 1, color, stroke, cv2.LINE_AA)
 
             color = (255, 255, 255)
             stroke = 2
@@ -60,9 +59,10 @@ def image(request):
         cv2.imwrite('webcam_detected.png', image)
 
         if name == data['person']:
-            return JsonResponse({'person': 'OK', 'token': hashlib.sha256(name.encode('utf-8')).hexdigest()}, safe=False)
+            #load name2auth
+            return JsonResponse(uname2auth[name], safe=False)
         else:
-            return JsonResponse({'person': 'undefined'})
+            return JsonResponse(uname2auth['unauthorized'], safe=False)
 
     else:
         return JsonResponse({'get method': 'invalid'}, safe=False)

@@ -2,7 +2,6 @@ import os, cv2
 import numpy as np
 from PIL import Image
 import pickle
-import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IMG_DIR = os.path.join(BASE_DIR, 'faces')
@@ -13,7 +12,7 @@ current_id = 0
 index = 0
 label_ids = {}
 
-face_cascade = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('data/haarcascade_frontalface_alt2.xml')
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 
 print(IMG_DIR)
@@ -31,15 +30,17 @@ for root, dirs, files in os.walk(IMG_DIR):
             index = label_ids[label]
 
             pil_img = Image.open(path).convert('L')
-            img_final = pil_img.resize((256, 256), Image.BILINEAR)
             gray = np.array(pil_img, 'uint8')
 
-            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.5, minNeighbors=5)
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
 
             if len(faces) != 0:
                 x, y, w, h = faces[0]
 
                 roi = gray[y: y + h, x: x + w]
+                roi = cv2.resize(roi, (128, 128), interpolation=cv2.INTER_LINEAR)
+
+                roi = cv2.equalizeHist(roi)
 
                 x_train.append(roi)
                 y_labels.append(index)
